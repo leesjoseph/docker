@@ -1,0 +1,57 @@
+services:
+  jenkins:
+    image: leesjoseph/jenkins:1
+    volumes:
+      - jenkins_volume:/var/jenkins_home
+    ports:
+      - "8080:8080"
+      - "50000:50000"
+
+  nexus:
+    image: sonatype/nexus3
+    restart: always
+    volumes:
+      - /Users/work/nexus:/nexus-work
+    ports:
+      - "8081:8081"
+      - "8085:8085"
+
+  sonarqube:
+    image: sonarqube:10.0.0-community
+    command: -Dsonar.ce.javaOpts=-Xmx1192m -Dsonar.web.javaOpts=-Xmx1192m
+    restart: unless-stopped
+    container_name: sonarqube
+    depends_on:
+      - sonarqube_db
+    ports:
+      - "9000:9000"
+    networks:
+      - sonar-net
+    environment:
+      - SONARQUBE_JDBC_URL=jdbc:postgresql://sonarqube_db:5432/sonar
+      - SONARQUBE_JDBC_USERNAME=sonar
+      - SONARQUBE_JDBC_PASSWORD=sonar
+    volumes:
+      - /Users/work/sonar/data:/opt/sonarqube/data
+      - /Users/work/sonar/extensions:/opt/sonarqube/extensions
+      - /Users/work/sonar/logs:/opt/sonarqube/logs
+
+  sonarqube_db:
+    image: postgres
+    container_name: sonarqube_db
+    restart: unless-stopped
+    networks:
+      - sonar-net
+    environment:
+      - POSTGRES_USER=sonar
+      - POSTGRES_PASSWORD=sonar
+    volumes:
+      - /Users/work/share/postgresql:/var/lib/postgresql
+      - /Users/work/share/postgresql/data:/var/lib/postgresql/data
+
+networks:
+  sonar-net:
+    external: false
+
+volumes:
+  jenkins_volume: {}
